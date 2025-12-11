@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ollama Chat</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #343541;
+      --sidebar-bg: #202123;
+      --chat-user: #343541;
+      --chat-bot: #444654;
+      --text-primary: #ececf1;
+      --text-secondary: #c5c5d2;
+      --border-color: #4d4d4f;
+      --input-bg: #40414f;
+      --accent: #10a37f;
+      --accent-hover: #1a7f64;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg-color);
+      color: var(--text-primary);
+      font-family: 'Söhne', 'Segoe UI', Helvetica, Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 10px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .new-chat-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      color: white;
+      background: transparent;
+      text-align: left;
+      font-size: 14px;
+    }
+    .new-chat-btn:hover { background: rgba(255,255,255,0.1); }
+
+    .settings-group {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 10px;
+    }
+
+    label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; display: block; }
+    select, input {
+      width: 100%;
+      background: var(--bg-color);
+      color: white;
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    /* Main Chat Area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    #chatArea {
+      flex: 1;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      padding-bottom: 120px;
+    }
+
+    .message-row {
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding: 24px 0;
+      width: 100%;
+    }
+    
+    .message-row.bot { background: var(--chat-bot); }
+    .message-row.user { background: var(--chat-user); }
+
+    .message-content {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      gap: 20px;
+      padding: 0 20px;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .user .avatar { background: #5436da; }
+    .bot .avatar { background: var(--accent); }
+
+    .text {
+      flex: 1;
+      line-height: 1.6;
+      font-size: 16px;
+      overflow-wrap: break-word;
+    }
+    .text p { margin-top: 0; }
+    .text pre { 
+      background: black; 
+      padding: 15px; 
+      border-radius: 6px; 
+      overflow-x: auto;
+    }
+
+    /* Input Area */
+    .input-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, rgba(53,53,65,0), var(--bg-color) 50%);
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .input-box {
+      max-width: 800px;
+      width: 100%;
+      position: relative;
+      display: flex;
+      background: var(--input-bg);
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      color: white;
+      padding: 14px 45px 14px 14px;
+      resize: none;
+      height: 52px;
+      max-height: 200px;
+      font-family: inherit;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .send-btn {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      background: transparent;
+      border: 0;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+    }
+    .send-btn:hover { background: rgba(0,0,0,0.2); color: white; }
+    .send-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .sidebar { display: none; position: absolute; z-index: 100; height: 100%; }
+      .sidebar.open { display: flex; }
+      .mobile-menu { display: block; position: absolute; top: 10px; left: 10px; z-index: 101; }
+    }
+    .mobile-menu { display: none; background: transparent; border: 0; color: white; font-size: 24px; cursor: pointer; }
+
+    /* Loading Animation */
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #ccc;
+      border-radius: 50%;
+      animation: typing 1.4s infinite both;
+      margin: 0 2px;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing { 0%, 100% { transform: scale(0.2); opacity: 0.2; } 50% { transform: scale(1); opacity: 1; } }
+
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <button class="new-chat-btn" onclick="startNewSession()">
+      <span>+</span> New chat
+    </button>
+
+    <div style="flex:1; overflow-y:auto; margin-top:10px;">
+      <label>Session History</label>
+      <div id="sessionList" style="display:flex; flex-direction:column; gap:5px;">
+        <!-- Sessions will go here -->
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <label>Model</label>
+      <select id="models" onchange="startNewSession()"></select>
+      
+      <label>API URL</label>
+      <input id="baseUrl" type="text" placeholder="http://localhost:8000" onchange="fetchModels()">
+    </div>
+  </div>
+
+  <!-- Main Chat -->
+  <div class="main-content">
+    <div id="chatArea">
+      <!-- Welcome Message -->
+      <div class="message-row bot">
+        <div class="message-content">
+          <div class="avatar">🤖</div>
+          <div class="text">
+            <p>Hello! I'm your local AI assistant running on Ollama. Select a model from the sidebar and start chatting!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <div class="input-box">
+        <textarea id="messageInput" placeholder="Send a message..." rows="1" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+        <button id="sendBtn" class="send-btn" onclick="sendMessage()">
+          <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="16" width="16" xmlns="http://www.w3.org/2000/svg"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+      <div style="position:absolute; bottom:5px; font-size:11px; color:rgba(255,255,255,0.3);">
+        AI can make mistakes. Consider checking important information.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentSessionId = null;
+    
+    // Markdown Config
+    marked.setOptions({
+      highlight: function(code, lang) {
+        const language = highlight.getLanguage(lang) ? lang : 'plaintext';
+        return highlight.highlight(code, { language }).value;
+      },
+      langPrefix: 'hljs language-'
+    });
+
+    // Helper to compute URL
+    function url(path){
+      let base = document.getElementById('baseUrl').value.trim();
+      if(!base) {
+        if (window.location.protocol === 'file:') base = 'http://localhost:8000';
+        else base = ''; // relative
+      }
+      return base.replace(/\/$/,'') + path;
+    }
+
+    async function fetchModels(){
+      const sel = document.getElementById('models');
+      try{
+        const res = await fetch(url('/api/models'));
+        const data = await res.json();
+        let list = data.models || [];
+        sel.innerHTML = '';
+        list.forEach(m=>{
+          const o = document.createElement('option'); 
+          const name = typeof m === 'string' ? m : m.name;
+          o.value = name; 
+          o.textContent = name; 
+          sel.appendChild(o);
+        });
+        // Start a session automatically if models loaded
+        if(list.length > 0 && !currentSessionId) startNewSession();
+      }catch(err){
+        console.error(err);
+        sel.innerHTML = '<option>Error loading models</option>';
+      }
+    }
+
+    async function startNewSession(){
+      const model = document.getElementById('models').value;
+      if(!model) return;
+      
+      // Clear chat except welcome
+      document.getElementById('chatArea').innerHTML = '';
+      appendMessage('bot', `Started new chat with **${model}**`);
+
+      try{
+        const res = await fetch(url('/api/sessions'),{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({model: model})
+        });
+        const data = await res.json();
+        currentSessionId = data.session_id;
+        loadSessionsList(); // Refresh history list
+      }catch(err){
+        appendMessage('bot', 'Error creating session: ' + err.message);
+      }
+    }
+
+    async function sendMessage(){
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      const model = document.getElementById('models').value;
+      
+      if(!message) return;
+      if(!currentSessionId) { await startNewSession(); }
+
+      input.value = '';
+      input.style.height = '52px';
+      
+      appendMessage('user', message);
+      
+      // Add loading indicator
+      const loadingId = appendMessage('bot', '<div class="typing-indicator"><span></span><span></span><span></span></div>', true);
+
+      try{
+        const res = await fetch(url('/api/chat'),{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            session_id: currentSessionId, 
+            model: model,
+            message: message
+          })
+        });
+        const data = await res.json();
+        
+        // Remove loading and show response
+        document.getElementById(loadingId).remove();
+        appendMessage('bot', data.response);
+        
+      }catch(err){
+        document.getElementById(loadingId).remove();
+        appendMessage('bot', 'Error: ' + err.message);
+      }
+    }
+
+    function appendMessage(role, text, isHtml=false){
+      const div = document.createElement('div');
+      div.className = `message-row ${role}`;
+      div.id = 'msg-' + Date.now();
+      
+      const avatar = role === 'user' ? '👤' : '🤖';
+      
+      // Parse Markdown for bot, plain text for user (unless isHtml flag)
+      let content = text;
+      if(role === 'bot' && !isHtml) {
+        content = marked.parse(text);
+      } else if (!isHtml) {
+        // Escape HTML for user input to prevent XSS
+        content = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      div.innerHTML = `
+        <div class="message-content">
+          <div class="avatar">${avatar}</div>
+          <div class="text">${content}</div>
+        </div>
+      `;
+      
+      const chatArea = document.getElementById('chatArea');
+      chatArea.appendChild(div);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      return div.id;
+    }
+
+    async function loadSessionsList(){
+      try {
+        const res = await fetch(url('/api/sessions'));
+        const sessions = await res.json();
+        const list = document.getElementById('sessionList');
+        list.innerHTML = '';
+        sessions.forEach(s => {
+          const btn = document.createElement('button');
+          btn.className = 'new-chat-btn';
+          btn.style.border = 'none';
+          btn.style.padding = '8px';
+          btn.innerHTML = `💬 ${s.model} <span style="opacity:0.5;font-size:10px">(${s.message_count})</span>`;
+          btn.onclick = () => loadSession(s.session_id);
+          list.appendChild(btn);
+        });
+      } catch(e) {}
+    }
+
+    async function loadSession(id){
+      currentSessionId = id;
+      document.getElementById('chatArea').innerHTML = '';
+      try {
+        const res = await fetch(url(`/api/sessions/${id}/history`));
+        const history = await res.json();
+        history.forEach(msg => {
+          appendMessage(msg.role, msg.content);
+        });
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    // Enter key to send
+    document.getElementById('messageInput').addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Init
+    fetchModels();
+    loadSessionsList();
+  </script>
+</body>
+</html>
