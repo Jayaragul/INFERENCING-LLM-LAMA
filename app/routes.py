@@ -18,6 +18,7 @@ from .models import (
 from .memory import memory
 from .ollama_client import ollama_client
 from .tools import search_web
+from .rag import rag_engine
 
 router = APIRouter()
 
@@ -90,10 +91,15 @@ async def upload_document(session_id: str, file: UploadFile = File(...)):
         if not content.strip():
             raise HTTPException(status_code=400, detail="Could not extract text from file")
             
-        memory.add_document_text(session_id, content)
+        # Get session model to use for embeddings
+        session_data = memory.get_session(session_id)
+        model_name = session_data.get("model", "llama3")
+        
+        # Add to Vector Store (ChromaDB)
+        rag_engine.add_document(session_id, content, filename, model_name)
         
         return {
-            "message": f"File '{file.filename}' processed successfully",
+            "message": f"File '{file.filename}' processed and indexed successfully",
             "chars_extracted": len(content)
         }
         
@@ -158,6 +164,9 @@ async def clear_session_history(session_id: str):
     if not memory.clear_session(session_id):
         raise HTTPException(status_code=404, detail="Session not found")
     
+    # Clear RAG context
+    rag_engine.clear_session(session_id)
+    
     return {"message": f"Session '{session_id}' history cleared successfully"}
 
 
@@ -198,8 +207,8 @@ async def chat(request: ChatRequest):
     session_data = memory.get_session(request.session_id)
     system_prompt = session_data.get("system_prompt")
     
-    # Get RAG context
-    rag_context = memory.get_context(request.session_id, request.message)
+    # Get RAG context from Vector Store
+    rag_context = rag_engine.query(request.session_id, request.message, request.model)
     
     # Web Search Logic
     web_context = ""
@@ -280,7 +289,7 @@ async def chat_stream(request: ChatRequest):
     
     session_data = memory.get_session(request.session_id)
     system_prompt = session_data.get("system_prompt")
-    rag_context = memory.get_context(request.session_id, request.message)
+    rag_context = rag_engine.query(request.session_id, request.message, request.model)
     
     # Web Search Logic
     web_context = ""
