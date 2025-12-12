@@ -11,6 +11,7 @@ class ChatRequest(BaseModel):
     session_id: str
     model: str
     message: str
+    use_web_search: Optional[bool] = False
 
 
 class ChatResponse(BaseModel):
@@ -41,9 +42,11 @@ class SessionInfo(BaseModel):
 class CreateSessionRequest(BaseModel):
     model: str
     session_id: Optional[str] = None
+    system_prompt: Optional[str] = None
 
 
 class CreateSessionResponse(BaseModel):
     session_id: str
     model: str
+    system_prompt: Optional[str] = None
     message: str

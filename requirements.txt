@@ -3,4 +3,10 @@ uvicorn
 ollama
 pydantic
 python-dotenv
+python-multipart
+pypdf
+duckduckgo-search
+requests
+
+
 

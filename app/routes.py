@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from typing import List
+import io
+from pypdf import PdfReader
+import asyncio
 
 from .models import (
     ChatRequest,
@@ -13,8 +17,10 @@ from .models import (
 )
 from .memory import memory
 from .ollama_client import ollama_client
+from .tools import search_web
 
 router = APIRouter()
+
 
 
 @router.get("/models", response_model=ModelsListResponse)
@@ -45,14 +51,54 @@ async def create_session(request: CreateSessionRequest):
     
     session_id = memory.create_session(
         model=request.model,
-        session_id=request.session_id
+        session_id=request.session_id,
+        system_prompt=request.system_prompt
     )
     
     return CreateSessionResponse(
         session_id=session_id,
         model=request.model,
+        system_prompt=request.system_prompt,
         message=f"Session created successfully with model '{request.model}'"
     )
+
+
+@router.post("/sessions/{session_id}/upload")
+async def upload_document(session_id: str, file: UploadFile = File(...)):
+    """
+    Upload a PDF or Text file to add to the session context (RAG).
+    """
+    if not memory.session_exists(session_id):
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    content = ""
+    filename = file.filename.lower()
+    
+    try:
+        if filename.endswith(".pdf"):
+            # Read PDF
+            pdf_content = await file.read()
+            pdf_file = io.BytesIO(pdf_content)
+            reader = PdfReader(pdf_file)
+            for page in reader.pages:
+                content += page.extract_text() + "\n"
+        else:
+            # Assume text
+            content_bytes = await file.read()
+            content = content_bytes.decode("utf-8", errors="ignore")
+            
+        if not content.strip():
+            raise HTTPException(status_code=400, detail="Could not extract text from file")
+            
+        memory.add_document_text(session_id, content)
+        
+        return {
+            "message": f"File '{file.filename}' processed successfully",
+            "chars_extracted": len(content)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
 
 @router.get("/sessions", response_model=List[SessionInfo])
@@ -140,13 +186,54 @@ async def chat(request: ChatRequest):
     memory.add_message(request.session_id, "user", request.message)
     
     # Get full conversation history for context
-    messages = memory.get_messages(request.session_id)
+    history_messages = memory.get_messages(request.session_id)
+    
+    # Construct the actual messages list sent to Ollama
+    # 1. Start with System Prompt (if any)
+    # 2. Add RAG Context (if any)
+    # 3. Add Conversation History
+    
+    final_messages = []
+    
+    session_data = memory.get_session(request.session_id)
+    system_prompt = session_data.get("system_prompt")
+    
+    # Get RAG context
+    rag_context = memory.get_context(request.session_id, request.message)
+    
+    # Web Search Logic
+    web_context = ""
+    if request.use_web_search:
+        try:
+            # Run search in a separate thread to avoid blocking
+            search_results = await asyncio.to_thread(search_web, request.message)
+            web_context = f"CONTEXT FROM WEB TOOLS (Weather/Wiki/Search):\n{search_results}\n\n"
+        except Exception as e:
+            print(f"Web search failed: {e}")
+            web_context = f"Web search failed: {str(e)}\n\n"
+    
+    if system_prompt or rag_context or web_context:
+        sys_content = ""
+        if system_prompt:
+            sys_content += f"{system_prompt}\n\n"
+        if web_context:
+            sys_content += web_context
+            sys_content += "IMPORTANT: If the user asked for a specific person, use the provided LinkedIn or social links to answer. Do not hallucinate URLs. Only use the links provided in the context.\n"
+        if rag_context:
+            sys_content += f"CONTEXT FROM UPLOADED DOCUMENTS:\n{rag_context}\n\n"
+            
+        if web_context or rag_context:
+            sys_content += "Answer the user's question based on the context above if relevant."
+            
+        final_messages.append({"role": "system", "content": sys_content})
+        
+    final_messages.extend(history_messages)
     
     try:
         # Send to Ollama with full conversation history
         response_content = ollama_client.chat(
             model=request.model,
-            messages=messages
+            messages=final_messages
         )
         
         # Add assistant response to memory
@@ -168,6 +255,74 @@ async def chat(request: ChatRequest):
         if messages and messages[-1]["role"] == "user":
             messages.pop()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """
+    Stream a message response from the model within a session.
+    """
+    # Check if session exists
+    if not memory.session_exists(request.session_id):
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Verify the model matches the session's model
+    session_model = memory.get_model(request.session_id)
+    if session_model != request.model:
+        raise HTTPException(status_code=400, detail="Model mismatch")
+    
+    # Add user message to memory
+    memory.add_message(request.session_id, "user", request.message)
+    
+    # Construct messages (same logic as regular chat)
+    history_messages = memory.get_messages(request.session_id)
+    final_messages = []
+    
+    session_data = memory.get_session(request.session_id)
+    system_prompt = session_data.get("system_prompt")
+    rag_context = memory.get_context(request.session_id, request.message)
+    
+    # Web Search Logic
+    web_context = ""
+    if request.use_web_search:
+        try:
+            # Run search in a separate thread to avoid blocking
+            search_results = await asyncio.to_thread(search_web, request.message)
+            web_context = f"CONTEXT FROM WEB TOOLS (Weather/Wiki/Search):\n{search_results}\n\n"
+        except Exception as e:
+            print(f"Web search failed: {e}")
+            web_context = f"Web search failed: {str(e)}\n\n"
+    
+    if system_prompt or rag_context or web_context:
+        sys_content = ""
+        if system_prompt:
+            sys_content += f"{system_prompt}\n\n"
+        if web_context:
+            sys_content += web_context
+            sys_content += "IMPORTANT: If the user asked for a specific person, use the provided LinkedIn or social links to answer. Do not hallucinate URLs. Only use the links provided in the context.\n"
+        if rag_context:
+            sys_content += f"CONTEXT FROM UPLOADED DOCUMENTS:\n{rag_context}\n\n"
+            
+        if web_context or rag_context:
+            sys_content += "Answer the user's question based on the context above if relevant."
+            
+        final_messages.append({"role": "system", "content": sys_content})
+        
+    final_messages.extend(history_messages)
+
+    async def generate():
+        full_response = ""
+        try:
+            for chunk in ollama_client.chat_stream(model=request.model, messages=final_messages):
+                full_response += chunk
+                yield chunk
+            
+            # Save to memory after completion
+            memory.add_message(request.session_id, "assistant", full_response)
+        except Exception as e:
+            yield f"Error: {str(e)}"
+
+    return StreamingResponse(generate(), media_type="text/plain")
 
 
 @router.post("/chat/quick")

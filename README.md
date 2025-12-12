@@ -1,145 +1,143 @@
-# 🦙 Ollama Inference Engine & API
+#  Local Agentic AI: The Ultimate Privacy-First LLM Platform
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?style=for-the-badge&logo=fastapi)
-![Ollama](https://img.shields.io/badge/Ollama-Local%20AI-black?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![FastAPI](https://img.shields.io/badge/FastAPI-High%20Performance-009688?style=for-the-badge&logo=fastapi)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20Inference-black?style=for-the-badge)
+![Agentic](https://img.shields.io/badge/AI-Agentic%20Capabilities-purple?style=for-the-badge)
 
-A professional, production-ready backend API for interacting with local Large Language Models (LLMs) via [Ollama](https://ollama.ai/). This project provides a robust layer on top of Ollama, adding **session management**, **conversation memory**, and a **RESTful API** interface suitable for integrating into web apps, mobile applications, and enterprise workflows.
+![Project Screenshot](new.png)
 
-![Project Screenshot](docs/images/screenshot_placeholder.png)
-*(Add a screenshot of your index.html frontend here)*
+**Unlock the power of AI without sacrificing privacy.**
 
----
+This project is a **production-ready, full-stack AI platform** that runs entirely on your local machine. It combines the power of local LLMs (via Ollama) with advanced **Agentic Capabilities** like Web Search, RAG (Document Chat), and Real-time Weather/News access.
 
-## 🚀 Key Features
-
-- **🧠 Context-Aware Memory**: Maintains conversation history per session, allowing for natural, multi-turn conversations.
-- **🔌 RESTful API**: Fully documented FastAPI endpoints for easy integration with React, Vue, iOS, Android, or IoT devices.
-- **📋 Model Management**: Dynamically list and switch between available local models (Llama 2, Mistral, Gemma, etc.).
-- **⚡ Real-time Inference**: Low-latency communication with the local Ollama instance.
-- **🖥️ Included Frontend**: Comes with a lightweight HTML/JS dashboard for immediate testing and demonstration.
-- **🐳 Docker Ready**: (Optional) Can be easily containerized for deployment.
+> **Why is this important?**
+> In an era where data privacy is critical, this project lets you build and use advanced AI tools that **never send your data to the cloud**. It's perfect for enterprises, researchers, and developers who need a powerful, free, and private alternative to ChatGPT.
 
 ---
 
-## 💡 Use Cases
+##  Features that Make a Difference
 
-This project is designed to be the backbone for various AI applications:
+###  **Agentic Web Search & Tools**
+Unlike standard local LLMs, this system is **connected**. It can autonomously decide to:
+- **Search the Web**: Get real-time news and information via DuckDuckGo.
+- **Check Weather**: Instant weather updates for any location (OpenWeatherMap/wttr.in).
+- **Consult Wikipedia**: Pull accurate summaries for definitions and historical figures.
+- **Person Search**: Specifically targets LinkedIn and professional sources to avoid hallucinations about people.
 
-1.  **🔒 Privacy-First Corporate Chatbots**
-    *   Deploy an internal chatbot for employees that runs entirely on-premise. No data leaves your network.
-2.  **📚 RAG (Retrieval-Augmented Generation) Systems**
-    *   Use this API as the generation engine. Feed retrieved documents into the context window via the chat endpoint.
-3.  **🤖 AI Agents & Assistants**
-    *   Give your software agents a "brain". The session memory allows agents to retain instructions over a sequence of tasks.
-4.  **📱 Mobile App Backend**
-    *   Serve LLM features to mobile apps without managing heavy model weights on the device itself.
-5.  **🧪 Research & Prototyping**
-    *   Quickly test different prompts and models against the same API interface without rewriting code.
+###  **RAG (Chat with your Data)**
+Upload **PDFs** or **Text files** directly in the UI. The system instantly indexes them, allowing you to ask questions about your specific documents. Perfect for legal contracts, research papers, or internal documentation.
 
----
+###  **Modern, Beautiful UI**
+Forget command lines. We provide a stunning, **Glassmorphism-styled Web Interface** with:
+- **Dark Mode** by default.
+- **Streaming Responses** (Typewriter effect).
+- **Syntax Highlighting** for code blocks.
+- **Mobile Responsive** design.
 
-## 🛠️ Architecture
-
-The system acts as a middleware between your applications and the raw Ollama inference engine.
-
-```mermaid
-graph LR
-    A[Client App / Frontend] <-->|HTTP REST| B[FastAPI Backend]
-    B <-->|Memory Manager| C[(In-Memory Session Store)]
-    B <-->|Ollama Library| D[Ollama Service]
-    D <-->|Inference| E[Local LLM (Llama2/Mistral)]
-```
+###  **Smart Memory & Personas**
+- **Context-Aware**: Remembers your conversation history.
+- **System Personas**: Define who the AI is (e.g., 'You are a Senior Python Engineer' or 'You are a Pirate').
 
 ---
 
-## ⚙️ Installation
+## 🎯 Real-World Use Cases
+
+### 🔒 Privacy-First Corporate Chatbots
+Deploy an internal chatbot for employees that runs entirely on-premise. No data leaves your network. Perfect for handling sensitive HR data or proprietary code.
+
+### 🧪 Research & Prototyping
+Quickly test different prompts and models against the same API interface without rewriting code. Compare Llama 3 vs Mistral instantly.
+
+### 📚 RAG (Retrieval-Augmented Generation) Systems
+Use this API as the generation engine. Feed retrieved documents into the context window via the chat endpoint to chat with your PDFs and text files.
+
+### 🤖 AI Agents & Assistants
+Give your software agents a "brain". The session memory allows agents to retain instructions over a sequence of tasks, while tools like Web Search give them "hands".
+
+### 📱 Mobile App Backend
+Serve LLM features to mobile apps without managing heavy model weights on the device itself.
+
+### 👨‍💻 For Developers & Students
+- **Offline Coding Assistant**: Ask for code snippets without leaking data.
+- **Literature Review**: Summarize long research papers (PDFs).
+
+---
+
+##  Quick Start Guide (Step-by-Step)
+
+Follow these simple steps to get your own AI running in minutes.
 
 ### Prerequisites
-- **Python 3.8+**
-- **[Ollama](https://ollama.ai/)** installed and running.
+1.  **Install Python 3.10+**: [Download Here](https://www.python.org/downloads/)
+2.  **Install Ollama**: [Download Here](https://ollama.ai/)
+    *   *Run 'ollama pull llama3' (or your preferred model) in your terminal after installing.*
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/inferencing-llm-lama.git
-cd inferencing-llm-lama
-```
+### Installation
 
-### 2. Set Up Virtual Environment
-```bash
-# Windows
+**1. Clone the Repository**
+\\\ash
+git clone https://github.com/yourusername/local-agentic-ai.git
+cd local-agentic-ai
+\\\`n
+**2. Set up the Environment**
+\\\ash
+# Create a virtual environment
 python -m venv .venv
+
+# Activate it
+# Windows:
 .venv\Scripts\activate
-
-# Linux/Mac
-python3 -m venv .venv
+# Mac/Linux:
 source .venv/bin/activate
-```
-
-### 3. Install Dependencies
-```bash
+\\\`n
+**3. Install Dependencies**
+\\\ash
 pip install -r requirements.txt
-```
-
-### 4. Pull a Model
-Ensure you have at least one model downloaded in Ollama:
-```bash
-ollama pull mistral
-# or
-ollama pull llama2
-```
-
----
-
-## 🚀 Usage
-
-### 1. Start the Ollama Service
-Ensure Ollama is running in the background.
-```bash
-ollama serve
-```
-
-### 2. Run the API Server
-```bash
+\\\`n
+**4. Run the Server**
+\\\ash
 python run.py
-```
-The server will start at `http://localhost:8000`.
-
-### 3. Access the Dashboard
-Open `index.html` in your browser, or navigate to the file path.
-*   **URL**: `http://localhost:8000/docs` (Swagger UI)
-*   **Frontend**: Open `index.html` directly.
+\\\`n
+**5. Launch the UI**
+Open your browser and go to:
+ **http://localhost:8000**
 
 ---
 
-## 📖 API Documentation
+##  How to Use
 
-The API is fully documented with Swagger UI. Visit `http://localhost:8000/docs` when the server is running.
+1.  **Select a Model**: Use the dropdown in the sidebar to pick any model you have installed in Ollama.
+2.  **Enable Web Search**: Check the 'Enable Web Search' box if you need real-time info.
+3.  **Upload Documents**: Click the 'Paperclip' icon to chat with a PDF.
+4.  **Set a Persona**: Type 'You are a helpful coding assistant' in the System Persona box to guide the AI's behavior.
 
-### Core Endpoints
+---
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | **/api/models** | List all available models installed locally. |
-| `POST` | **/api/sessions** | Create a new chat session. Returns a `session_id`. |
-| `POST` | **/api/chat** | Send a message. Requires `session_id`, `model`, and `message`. |
-| `GET` | **/api/sessions/{id}/history** | Retrieve the full conversation history for a specific session. |
+## 🔌 API & Inference Integration
 
-### Example Request (Python)
+You can use **Ollama Agent Zero** as a powerful backend to power your own apps (Mobile, Desktop, IoT). It exposes standard HTTP endpoints that allow you to run inference on **any model installed in Ollama** with custom **System Prompts**.
 
+### Why use this API?
+- **Universal Compatibility**: Works with any language (Python, JS, C#, Swift).
+- **Full Agentic Power**: Your external apps get Web Search, RAG, and Memory for free.
+- **Flexible Control**: Dynamically switch models and system prompts per request.
+
+### Example: Python Client
 ```python
 import requests
 
-# 1. Create Session
-session = requests.post("http://localhost:8000/api/sessions", json={"model": "mistral"}).json()
-session_id = session['session_id']
+# 1. Create a Session with a specific Model & Persona
+session = requests.post("http://localhost:8000/api/sessions", json={
+    "model": "llama3",
+    "system_prompt": "You are a financial analyst."
+}).json()
 
-# 2. Chat
+# 2. Send a Message
 response = requests.post("http://localhost:8000/api/chat", json={
-    "session_id": session_id,
-    "model": "mistral",
-    "message": "Explain quantum computing in simple terms."
+    "session_id": session['session_id'],
+    "message": "Analyze the market trends.",
+    "use_web_search": True
 }).json()
 
 print(response['response'])
@@ -147,40 +145,17 @@ print(response['response'])
 
 ---
 
-## 📂 Project Structure
+##  Tech Stack
 
-```
-INFERENCING LLM LAMA/
-├── app/
-│   ├── __init__.py
-│   ├── main.py          # FastAPI entry point
-│   ├── routes.py        # API Route definitions
-│   ├── models.py        # Pydantic data models
-│   ├── memory.py        # Session state management
-│   └── ollama_client.py # Ollama integration logic
-├── docs/
-│   └── images/          # Documentation assets
-├── examples/            # Client examples (Python, JS)
-├── index.html           # Web Dashboard
-├── requirements.txt     # Dependencies
-├── run.py               # Server runner script
-└── README.md            # This file
-```
+- **Backend**: FastAPI (Python) - High performance, async support.
+- **AI Engine**: Ollama - Local inference for Llama 3, Mistral, Gemma, etc.
+- **Search**: DuckDuckGo Search & Wikipedia API.
+- **Frontend**: Vanilla JS + HTML5 + CSS3 (No complex build steps required!).
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We believe in open-source AI. If you have ideas for new tools (e.g., Calendar integration, Email drafting), feel free to fork and submit a Pull Request!
 
-1.  Fork the project
-2.  Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
----
-
-## 📄 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
+**Star  this repo if you find it useful!**

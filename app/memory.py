@@ -13,14 +13,16 @@ class ConversationMemory:
         # Structure: {session_id: {"model": str, "messages": List[dict], "created_at": str}}
         self._sessions: Dict[str, dict] = {}
     
-    def create_session(self, model: str, session_id: Optional[str] = None) -> str:
+    def create_session(self, model: str, session_id: Optional[str] = None, system_prompt: Optional[str] = None) -> str:
         """Create a new conversation session."""
         if session_id is None:
             session_id = str(uuid.uuid4())
         
         self._sessions[session_id] = {
             "model": model,
+            "system_prompt": system_prompt,
             "messages": [],
+            "documents": [], # List of text chunks or full text
             "created_at": datetime.now().isoformat()
         }
         return session_id
@@ -29,6 +31,32 @@ class ConversationMemory:
         """Get session data by ID."""
         return self._sessions.get(session_id)
     
+    def add_document_text(self, session_id: str, text: str):
+        """Add document text to session context."""
+        if session_id in self._sessions:
+            self._sessions[session_id]["documents"].append(text)
+
+    def get_context(self, session_id: str, query: str) -> str:
+        """
+        Retrieve relevant context from documents based on query.
+        For now, we'll do a simple implementation: return all text if small, 
+        or simple keyword matching if large.
+        """
+        if session_id not in self._sessions:
+            return ""
+        
+        docs = self._sessions[session_id]["documents"]
+        if not docs:
+            return ""
+            
+        # Simple strategy: Join all text. 
+        # In a real RAG, you'd use embeddings here.
+        full_text = "\n\n".join(docs)
+        
+        # If text is huge, we might want to truncate or filter.
+        # For this demo, we'll limit to ~4000 chars to fit in context
+        return full_text[:4000]
+
     def session_exists(self, session_id: str) -> bool:
         """Check if a session exists."""
         return session_id in self._sessions

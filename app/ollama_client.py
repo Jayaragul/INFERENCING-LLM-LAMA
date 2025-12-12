@@ -81,6 +81,35 @@ class OllamaClient:
                 return response["message"]["content"]
         except Exception as e:
             raise Exception(f"Failed to chat: {str(e)}")
+
+    def chat_stream(self, model: str, messages: List[dict]):
+        """
+        Stream chat response from Ollama.
+        
+        Args:
+            model: The model name to use.
+            messages: List of message dictionaries with 'role' and 'content'.
+            
+        Yields:
+            Chunks of the assistant's response content.
+        """
+        try:
+            stream = self.client.chat(
+                model=model,
+                messages=messages,
+                stream=True
+            )
+            for chunk in stream:
+                content = ""
+                if hasattr(chunk, 'message'):
+                    content = chunk.message.content
+                else:
+                    content = chunk.get('message', {}).get('content', '')
+                
+                if content:
+                    yield content
+        except Exception as e:
+            yield f"Error: {str(e)}"
     
     def check_model_exists(self, model_name: str) -> bool:
         """
